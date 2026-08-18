@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.ksck.hook"
+    package="com.ksck.signbridge"
     android:versionCode="1"
     android:versionName="1.0">
 
@@ -16,7 +16,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="快手极速版一键提取 Cookie (本地剪贴板)" />
+            android:value="快手极速版签名桥 (HTTP 签名服务器)" />
         <meta-data
             android:name="xposedminversion"
             android:value="82" />

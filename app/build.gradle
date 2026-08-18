@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.ksck.hook'
+    namespace 'com.ksck.signbridge'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.ksck.hook"
+        applicationId "com.ksck.signbridge"
         minSdk 21
         targetSdk 34
         versionCode 1

@@ -1,0 +1,26 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# 不要推送分析产物和大型二进制
+/work/apktriage/
+/work/ks.original.js
+/work/ks.local.js
+/work/frida/
+/outputs/*.log
+/outputs/*.tmp
+/outputs/*_raw.txt
+/outputs/*.json
+/build/
+*.dex
+*.so
+*.jar
+!gradle/wrapper/gradle-wrapper.jar

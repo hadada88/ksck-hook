@@ -79,7 +79,7 @@ public class AtlasSign {
             Object result = atlasSign.invoke(null, path + sig);
             return result != null ? result.toString() : "";
         } catch (Exception e) {
-            XposedBridge.log("[AtlasSign] sig3 error: " + e);
+            android.util.Log.e("AtlasSign", "sig3 error: " + e);
             return "";
         }
     }
@@ -120,7 +120,7 @@ public class AtlasSign {
 
             return new String[]{encdata, sign};
         } catch (Exception e) {
-            XposedBridge.log("[AtlasSign] encsign error: " + e);
+            android.util.Log.e("AtlasSign", "encsign error: " + e);
             return new String[]{"", ""};
         }
     }

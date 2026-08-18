@@ -57,7 +57,6 @@ public class MainHook implements IXposedHookLoadPackage {
         ClassLoader cl = appClassLoader;
 
         // 1. Hook QCurrentUser 获取用户信息
-        hookQCurrentUser(cl);
 
         // 2. Hook 网络参数类 (eClass)
         hookEClass(cl);
@@ -101,25 +100,6 @@ public class MainHook implements IXposedHookLoadPackage {
                         }
                     }
                 });
-            } catch (Throwable ignored) {}
-
-            // 通过反射读取静态实例字段
-            try {
-                Method meMethod = qcuClass.getMethod("me");
-                Object me = meMethod.invoke(null);
-                if (me != null) {
-                    readField(me, "mTokenClientSalt", v -> tokenClientSalt = v);
-                    readField(me, "mNewTokenClientSalt", v -> {
-                        if (tokenClientSalt == null) tokenClientSalt = v;
-                    });
-                    readField(me, "mUserId", v -> { userId = v; ud = v; });
-                    readField(me, "mKuaishouApiSt", v -> kuaishouApiSt = v);
-                    readField(me, "mEgid", v -> egid = v);
-                    readField(me, "mDid", v -> did = v);
-                    readField(me, "mODid", v -> oDid = v);
-                    readField(me, "mNewOc", v -> newOc = v);
-                    readField(me, "mRdid", v -> rdid = v);
-                }
             } catch (Throwable ignored) {}
 
             XposedBridge.log(TAG + " QCurrentUser Hook 就绪");
@@ -224,6 +204,7 @@ public class MainHook implements IXposedHookLoadPackage {
                             @Override
                             public void run() {
                                 if (hasAllRequiredParams()) {
+                                    try { Method m = Class.forName("com.kwai.framework.model.user.QCurrentUser").getMethod("me"); Object me = m.invoke(null); java.lang.reflect.Field f = me.getClass().getDeclaredField("mTokenClientSalt"); f.setAccessible(true); Object v = f.get(me); if (v != null) tokenClientSalt = v.toString(); Field f2 = me.getClass().getDeclaredField("mUserId"); f2.setAccessible(true); Object v2 = f2.get(me); if (v2 != null) { userId = v2.toString(); ud = userId; } } catch (Throwable t) {}
                                     buildAndOutput();
                                     dialogShown = true;
                                 }

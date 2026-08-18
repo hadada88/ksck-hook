@@ -23,4 +23,4 @@ local.properties
 *.dex
 *.so
 *.jar
-!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jaroutputs/*.apk

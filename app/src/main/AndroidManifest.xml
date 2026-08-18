@@ -12,7 +12,7 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name=".hook.DummyActivity"
+            android:name="com.ksck.hook.DummyActivity"
             android:exported="true" />
 
         <meta-data

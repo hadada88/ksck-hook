@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+def keystoreProperties = [
+    storeFile: file("$rootDir/keystore/ksck-release.jks"),
+    storePassword: "ksck123456",
+    keyAlias: "ksck",
+    keyPassword: "ksck123456"
+]
+
 android {
     namespace 'com.ksck.signbridge'
     compileSdk 34
@@ -14,12 +21,19 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        release {
+            storeFile keystoreProperties.storeFile
+            storePassword keystoreProperties.storePassword
+            keyAlias keystoreProperties.keyAlias
+            keyPassword keystoreProperties.keyPassword
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            // This standalone LSPosed module has no distribution keystore.
-            // Use the locally generated debug key so the CI artifact is installable.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }

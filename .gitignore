@@ -24,3 +24,7 @@ local.properties
 *.so
 *.jar
 !gradle/wrapper/gradle-wrapper.jaroutputs/*.apk
+
+# Keep the stable release signing key tracked for reproducible APK signatures.
+!keystore/
+!keystore/ksck-release.jks

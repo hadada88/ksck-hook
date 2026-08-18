@@ -8,8 +8,8 @@
 
     <application
         android:label="KS_CK"
-        android:icon="@mipmap/ic_launcher"
-        android:theme="@style/Theme.AppCompat.Light">
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <meta-data
             android:name="xposedmodule"

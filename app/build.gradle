@@ -17,6 +17,9 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            // This standalone LSPosed module has no distribution keystore.
+            // Use the locally generated debug key so the CI artifact is installable.
+            signingConfig signingConfigs.debug
         }
     }
 }

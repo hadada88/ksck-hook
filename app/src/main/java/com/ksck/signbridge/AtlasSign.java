@@ -8,16 +8,22 @@ import java.lang.reflect.Method;
  */
 public class AtlasSign {
 
+    private static ClassLoader appClassLoader;
+
     private static final String AD_NAMESPACE = "KwaiAdAwardVideo";
     private static final String AD_APP_KEY = "95147564-9763-4413-a937-6f0e3c12caf1";
     private static final int AD_SDK_TYPE = 0;
+
+    public static void init(ClassLoader appClassLoader) {
+        AtlasSign.appClassLoader = appClassLoader;
+    }
 
     /**
      * 获取状态
      */
     public static String getStatus() {
         try {
-            Class<?> KSecurity = Class.forName("com.kuaishou.android.security.KSecurity");
+            Class<?> KSecurity = appClassLoader.loadClass("com.kuaishou.android.security.KSecurity");
             Method isInit = KSecurity.getMethod("isInitialize");
             boolean initialized = (Boolean) isInit.invoke(null);
 
@@ -26,7 +32,7 @@ public class AtlasSign {
 
             // wrapper
             try {
-                Class<?> MXSec = Class.forName("com.middleware.security.MXSec");
+                Class<?> MXSec = appClassLoader.loadClass("com.middleware.security.MXSec");
                 Method get = MXSec.getMethod("get");
                 Object mx = get.invoke(null);
                 Method getWrapper = mx.getClass().getMethod("getWrapper");
@@ -41,7 +47,7 @@ public class AtlasSign {
 
             // wbKeyLength
             try {
-                Class<?> configCls = Class.forName("com.kuaishou.android.security.KSecurity");
+                Class<?> configCls = appClassLoader.loadClass("com.kuaishou.android.security.KSecurity");
                 Method getConfig = configCls.getMethod("getConfig");
                 Object config = getConfig.invoke(null);
                 if (config != null) {
@@ -74,7 +80,7 @@ public class AtlasSign {
      */
     public static String sig3(String path, String sig) {
         try {
-            Class<?> KSecurity = Class.forName("com.kuaishou.android.security.KSecurity");
+            Class<?> KSecurity = appClassLoader.loadClass("com.kuaishou.android.security.KSecurity");
             Method atlasSign = KSecurity.getMethod("atlasSign", String.class);
             Object result = atlasSign.invoke(null, path + sig);
             return result != null ? result.toString() : "";
@@ -91,7 +97,7 @@ public class AtlasSign {
      */
     public static String[] encsign(String base64Data) {
         try {
-            Class<?> MXSec = Class.forName("com.middleware.security.MXSec");
+            Class<?> MXSec = appClassLoader.loadClass("com.middleware.security.MXSec");
             Method get = MXSec.getMethod("get");
             Object mx = get.invoke(null);
             Method getMXWrapper = mx.getClass().getMethod("getMXWrapper");
@@ -99,7 +105,7 @@ public class AtlasSign {
 
             // 获取字节数组
             Class<?> stringClass = String.class;
-            Class<?> base64Class = Class.forName("android.util.Base64");
+            Class<?> base64Class = appClassLoader.loadClass("android.util.Base64");
             byte[] rawBytes = base64Data.getBytes("UTF-8");
 
             // 加密: wrapper.a(namespace, appKey, sdkType, rawBytes)

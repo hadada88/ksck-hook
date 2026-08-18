@@ -10,6 +10,8 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import com.ksck.signbridge.AtlasSign;
+import com.ksck.http.SimpleHttpServer;
 
 /**
  * KS_CK - 快手极速版一键提取 Cookie 模块
@@ -39,6 +41,7 @@ public class MainHook implements IXposedHookLoadPackage {
 
     private boolean dialogShown = false;
     private boolean shouldStopHooking = false;
+    private ClassLoader appClassLoader;
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
@@ -48,7 +51,10 @@ public class MainHook implements IXposedHookLoadPackage {
         }
 
         XposedBridge.log(TAG + " 加载到: " + lpparam.packageName);
-        ClassLoader cl = lpparam.classLoader;
+        appClassLoader = lpparam.classLoader;
+        AtlasSign.init(appClassLoader);
+        SimpleHttpServer.start();
+        ClassLoader cl = appClassLoader;
 
         // 1. Hook QCurrentUser 获取用户信息
         hookQCurrentUser(cl);

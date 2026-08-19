@@ -218,6 +218,15 @@ public class MainHook implements IXposedHookLoadPackage {
                         postDelayed.invoke(handler, new Runnable() {
                             @Override
                             public void run() {
+                                if (appContext == null) {
+                                    try {
+                                        Object at = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
+                                        if (at != null) {
+                                            android.content.Context ctx = (android.content.Context) XposedHelpers.callMethod(at, "getApplication");
+                                            if (ctx != null) appContext = ctx;
+                                        }
+                                    } catch (Throwable ignored) {}
+                                }
                                 refreshCurrentUser();
                                 if (hasAllRequiredParams()) {
                                     try {

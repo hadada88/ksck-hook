@@ -102,7 +102,7 @@ public class AtlasSign {
             Class<?> cpu = appClassLoader.loadClass("com.yxcorp.gifshow.util.CPU");
             Method getClock = cpu.getMethod("getClock",
                     android.content.Context.class, byte[].class, int.class);
-            android.content.Context app = currentApplication();
+            android.content.Context app = com.ksck.hook.MainHook.appContext;
             Object result = getClock.invoke(null,
                     app, plainText.getBytes("UTF-8"), Build.VERSION.SDK_INT);
             return result != null ? result.toString() : "";

@@ -21,6 +21,8 @@ import com.ksck.http.SimpleHttpServer;
  */
 public class MainHook implements IXposedHookLoadPackage {
 
+    public static android.content.Context appContext = null;
+
     private static final String TAG = "KS_CK";
     private static final String TARGET_PACKAGE = "com.kuaishou.nebula";
 
@@ -54,6 +56,14 @@ public class MainHook implements IXposedHookLoadPackage {
         appClassLoader = lpparam.classLoader;
         AtlasSign.init(appClassLoader);
         SimpleHttpServer.start();
+        try {
+            // Use XposedHelpers to get Application from ActivityThread
+            Object at = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
+            if (at != null) {
+                android.content.Context ctx = (android.content.Context) XposedHelpers.callMethod(at, "getApplication");
+                if (ctx != null) appContext = ctx;
+            }
+        } catch (Throwable t) { XposedBridge.log("KS_CK getAppContext: " + t); }
         ClassLoader cl = appClassLoader;
 
         // 1. Hook QCurrentUser 获取用户信息

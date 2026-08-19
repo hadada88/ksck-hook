@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
+import de.robv.android.xposed.XposedBridge;
 
 /**
  * Atlas 签名 - 调用 KSecurity 和 MXSec API
@@ -122,25 +123,27 @@ public class AtlasSign {
                 }
             }
             if (context == null) {
-                android.util.Log.e("AtlasSign", "accessSig: no application context");
+                XposedBridge.log("AtlasSign accessSig: no application context");
                 return "";
             }
             if (appClassLoader == null) {
-                android.util.Log.e("AtlasSign", "accessSig: appClassLoader is null");
+                XposedBridge.log("AtlasSign accessSig: appClassLoader is null");
                 return "";
             }
 
             // CPU.getClock is (Context, byte[], int); loading CPU triggers
             // its static initializer, which loads the app's native "core" lib.
+            XposedBridge.log("AtlasSign accessSig: loading CPU class...");
             Class<?> cpu = Class.forName("com.yxcorp.gifshow.util.CPU", true, appClassLoader);
+            XposedBridge.log("AtlasSign accessSig: CPU class loaded, getting getClock method...");
             Method getClock = cpu.getDeclaredMethod("getClock",
                     Context.class, byte[].class, int.class);
             getClock.setAccessible(true);
             byte[] input = plainText.getBytes("UTF-8");
+            XposedBridge.log("AtlasSign accessSig: invoking getClock...");
             Object result = getClock.invoke(null, context, input, Build.VERSION.SDK_INT);
             String signature = result != null ? result.toString() : "";
-            android.util.Log.i("AtlasSign", "accessSig native success: inputLen="
-                    + input.length + ", resultLen=" + signature.length());
+            XposedBridge.log("AtlasSign accessSig: native success, resultLen=" + signature.length());
             return signature;
         } catch (Throwable error) {
             Throwable cause = error;
@@ -148,8 +151,8 @@ public class AtlasSign {
                     && ((java.lang.reflect.InvocationTargetException) error).getCause() != null) {
                 cause = ((java.lang.reflect.InvocationTargetException) error).getCause();
             }
-            android.util.Log.e("AtlasSign", "accessSig native failed: "
-                    + cause.getClass().getName() + ": " + cause.getMessage(), cause);
+            XposedBridge.log("AtlasSign accessSig failed: "
+                    + cause.getClass().getName() + ": " + cause.getMessage());
             return "";
         }
     }

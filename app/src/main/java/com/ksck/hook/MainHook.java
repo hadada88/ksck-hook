@@ -220,10 +220,9 @@ public class MainHook implements IXposedHookLoadPackage {
                             public void run() {
                                 if (appContext == null) {
                                     try {
-                                        Object at = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
-                                        if (at != null) {
-                                            android.content.Context ctx = (android.content.Context) XposedHelpers.callMethod(at, "getApplication");
-                                            if (ctx != null) appContext = ctx;
+                                        android.content.Context ctx = (android.content.Context) activity;
+                                        if (ctx != null) {
+                                            appContext = ctx.getApplicationContext();
                                         }
                                     } catch (Throwable ignored) {}
                                 }

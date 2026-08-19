@@ -204,7 +204,77 @@ public class MainHook implements IXposedHookLoadPackage {
                             @Override
                             public void run() {
                                 if (hasAllRequiredParams()) {
-                                    try { Method m = Class.forName("com.kwai.framework.model.user.QCurrentUser").getMethod("me"); Object me = m.invoke(null); java.lang.reflect.Field f = me.getClass().getDeclaredField("mTokenClientSalt"); f.setAccessible(true); Object v = f.get(me); if (v != null) tokenClientSalt = v.toString(); Field f2 = me.getClass().getDeclaredField("mUserId"); f2.setAccessible(true); Object v2 = f2.get(me); if (v2 != null) { userId = v2.toString(); ud = userId; } } catch (Throwable t) {}
+                                    try {
+                                        Class<?> qcuClass;
+                                        try {
+                                            qcuClass = Class.forName("com.kwai.framework.model.user.QCurrentUser", false, appClassLoader);
+                                        } catch (Throwable classLoaderError) {
+                                            XposedBridge.log(TAG + " tokenClientSalt Class.forName(appClassLoader) failed: " + classLoaderError);
+                                            qcuClass = Class.forName("com.kwai.framework.model.user.QCurrentUser");
+                                        }
+
+                                        Method m = qcuClass.getMethod("me");
+                                        Object me = m.invoke(null);
+                                        if (me == null) {
+                                            XposedBridge.log(TAG + " tokenClientSalt QCurrentUser.me() returned null");
+                                        } else {
+                                            String[] saltFieldNames = new String[] {
+                                                    "mNewTokenClientSalt",
+                                                    "tokenClientSalt",
+                                                    "mTokenClientSalt",
+                                                    "M_TOKEN_CLIENT_SALT"
+                                            };
+                                            for (int i = 0; i < saltFieldNames.length && tokenClientSalt == null; i++) {
+                                                String fieldName = saltFieldNames[i];
+                                                XposedBridge.log(TAG + " tokenClientSalt trying field: " + fieldName
+                                                        + " on " + me.getClass().getName());
+                                                try {
+                                                    Field f = me.getClass().getDeclaredField(fieldName);
+                                                    f.setAccessible(true);
+                                                    Object v = f.get(me);
+                                                    if (v != null) {
+                                                        tokenClientSalt = v.toString();
+                                                        XposedBridge.log(TAG + " tokenClientSalt read from field " + fieldName);
+                                                    } else {
+                                                        XposedBridge.log(TAG + " tokenClientSalt field " + fieldName + " is null");
+                                                    }
+                                                } catch (Throwable fieldError) {
+                                                    XposedBridge.log(TAG + " tokenClientSalt field " + fieldName
+                                                            + " failed: " + fieldError);
+                                                }
+                                            }
+
+                                            if (tokenClientSalt == null) {
+                                                XposedBridge.log(TAG + " tokenClientSalt trying method: getTokenClientSalt");
+                                                try {
+                                                    Method saltGetter = me.getClass().getMethod("getTokenClientSalt");
+                                                    Object v = saltGetter.invoke(me);
+                                                    if (v != null) {
+                                                        tokenClientSalt = v.toString();
+                                                        XposedBridge.log(TAG + " tokenClientSalt read from getTokenClientSalt()");
+                                                    } else {
+                                                        XposedBridge.log(TAG + " tokenClientSalt getTokenClientSalt() returned null");
+                                                    }
+                                                } catch (Throwable getterError) {
+                                                    XposedBridge.log(TAG + " tokenClientSalt getTokenClientSalt() failed: " + getterError);
+                                                }
+                                            }
+
+                                            try {
+                                                Field f2 = me.getClass().getDeclaredField("mUserId");
+                                                f2.setAccessible(true);
+                                                Object v2 = f2.get(me);
+                                                if (v2 != null) {
+                                                    userId = v2.toString();
+                                                    ud = userId;
+                                                }
+                                            } catch (Throwable userIdError) {
+                                                XposedBridge.log(TAG + " mUserId read failed: " + userIdError);
+                                            }
+                                        }
+                                    } catch (Throwable t) {
+                                        XposedBridge.log(TAG + " tokenClientSalt QCurrentUser.me()/reflection failed: " + t);
+                                    }
                                     buildAndOutput();
                                     dialogShown = true;
                                 }

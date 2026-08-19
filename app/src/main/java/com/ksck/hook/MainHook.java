@@ -61,7 +61,10 @@ public class MainHook implements IXposedHookLoadPackage {
             Object at = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
             if (at != null) {
                 android.content.Context ctx = (android.content.Context) XposedHelpers.callMethod(at, "getApplication");
-                if (ctx != null) appContext = ctx;
+                if (ctx != null) {
+                    appContext = ctx;
+                    AtlasSign.setContext(ctx);
+                }
             }
         } catch (Throwable t) { XposedBridge.log("KS_CK getAppContext: " + t); }
         ClassLoader cl = appClassLoader;

@@ -2,6 +2,7 @@ package com.ksck.signbridge;
 
 import java.lang.reflect.Method;
 import android.app.Application;
+import android.content.Context;
 import android.os.Build;
 
 /**
@@ -11,6 +12,7 @@ import android.os.Build;
 public class AtlasSign {
 
     private static ClassLoader appClassLoader;
+    private static volatile Context appContext;
 
     private static final String AD_NAMESPACE = "KwaiAdAwardVideo";
     private static final String AD_APP_KEY = "95147564-9763-4413-a937-6f0e3c12caf1";
@@ -18,6 +20,19 @@ public class AtlasSign {
 
     public static void init(ClassLoader appClassLoader) {
         AtlasSign.appClassLoader = appClassLoader;
+        Context context = currentApplication();
+        if (context != null) {
+            AtlasSign.appContext = context.getApplicationContext();
+        }
+    }
+
+    public static void setContext(Context context) {
+        if (context != null) {
+            Context applicationContext = context.getApplicationContext();
+            AtlasSign.appContext = applicationContext != null ? applicationContext : context;
+            android.util.Log.i("AtlasSign", "application context cached: "
+                    + AtlasSign.appContext.getClass().getName());
+        }
     }
 
     /**
@@ -97,17 +112,44 @@ public class AtlasSign {
      * 对排序后的 key=value 明文调用 com.yxcorp.gifshow.util.CPU.getClock。
      */
     public static String accessSig(String plainText) {
+        if (plainText == null || plainText.length() == 0) return "";
         try {
-            if (plainText == null || plainText.length() == 0) return "";
-            Class<?> cpu = appClassLoader.loadClass("com.yxcorp.gifshow.util.CPU");
-            Method getClock = cpu.getMethod("getClock",
-                    android.content.Context.class, byte[].class, int.class);
-            android.content.Context app = com.ksck.hook.MainHook.appContext;
-            Object result = getClock.invoke(null,
-                    app, plainText.getBytes("UTF-8"), Build.VERSION.SDK_INT);
-            return result != null ? result.toString() : "";
-        } catch (Exception e) {
-            android.util.Log.e("AtlasSign", "accessSig error: " + e);
+            Context context = appContext;
+            if (context == null) {
+                context = currentApplication();
+                if (context != null) {
+                    setContext(context);
+                }
+            }
+            if (context == null) {
+                android.util.Log.e("AtlasSign", "accessSig: no application context");
+                return "";
+            }
+            if (appClassLoader == null) {
+                android.util.Log.e("AtlasSign", "accessSig: appClassLoader is null");
+                return "";
+            }
+
+            // CPU.getClock is (Context, byte[], int); loading CPU triggers
+            // its static initializer, which loads the app's native "core" lib.
+            Class<?> cpu = Class.forName("com.yxcorp.gifshow.util.CPU", true, appClassLoader);
+            Method getClock = cpu.getDeclaredMethod("getClock",
+                    Context.class, byte[].class, int.class);
+            getClock.setAccessible(true);
+            byte[] input = plainText.getBytes("UTF-8");
+            Object result = getClock.invoke(null, context, input, Build.VERSION.SDK_INT);
+            String signature = result != null ? result.toString() : "";
+            android.util.Log.i("AtlasSign", "accessSig native success: inputLen="
+                    + input.length + ", resultLen=" + signature.length());
+            return signature;
+        } catch (Throwable error) {
+            Throwable cause = error;
+            if (error instanceof java.lang.reflect.InvocationTargetException
+                    && ((java.lang.reflect.InvocationTargetException) error).getCause() != null) {
+                cause = ((java.lang.reflect.InvocationTargetException) error).getCause();
+            }
+            android.util.Log.e("AtlasSign", "accessSig native failed: "
+                    + cause.getClass().getName() + ": " + cause.getMessage(), cause);
             return "";
         }
     }

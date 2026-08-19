@@ -30,14 +30,15 @@ public class PureSign {
                 }
             }
 
-            Collections.sort(pairs, (a, b) -> a.key.compareTo(b.key));
+            // App-side itm.b.a() sorts complete "key=value" strings and
+            // concatenates them with no separator; duplicate keys are kept.
+            Collections.sort(pairs, (a, b) -> {
+                int byKey = a.key.compareTo(b.key);
+                return byKey != 0 ? byKey : a.value.compareTo(b.value);
+            });
             StringBuilder sb = new StringBuilder();
-            String lastKey = null;
             for (Pair p : pairs) {
-                if (!p.key.equals(lastKey)) {
-                    sb.append(p.key).append("=").append(p.value);
-                    lastKey = p.key;
-                }
+                sb.append(p.key).append("=").append(p.value);
             }
             return sb.toString();
         } catch (Exception e) {

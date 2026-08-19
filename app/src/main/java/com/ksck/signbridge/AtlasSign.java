@@ -108,6 +108,15 @@ public class AtlasSign {
         }
     }
 
+    static void debugLog(String msg) {
+        try {
+            java.io.File f = new java.io.File("/data/local/tmp/atlas_debug.log");
+            java.io.FileWriter fw = new java.io.FileWriter(f, true);
+            fw.write(System.currentTimeMillis() + " " + msg + "\n");
+            fw.close();
+        } catch (Throwable ignored) {}
+    }
+
     /**
      * 计算新版 access sig：与 App 内 KwaiSignSupplierImpl 一致，
      * 对排序后的 key=value 明文调用 com.yxcorp.gifshow.util.CPU.getClock。
@@ -116,34 +125,36 @@ public class AtlasSign {
         if (plainText == null || plainText.length() == 0) return "";
         try {
             Context context = appContext;
+            debugLog("accessSig: start, appContext=" + (context != null ? context.getClass().getName() : "null"));
             if (context == null) {
                 context = currentApplication();
+                debugLog("accessSig: currentApplication=" + (context != null ? "ok" : "null"));
                 if (context != null) {
                     setContext(context);
                 }
             }
             if (context == null) {
-                XposedBridge.log("AtlasSign accessSig: no application context");
+                debugLog("accessSig: no application context");
                 return "";
             }
             if (appClassLoader == null) {
-                XposedBridge.log("AtlasSign accessSig: appClassLoader is null");
+                debugLog("accessSig: appClassLoader is null");
                 return "";
             }
 
             // CPU.getClock is (Context, byte[], int); loading CPU triggers
             // its static initializer, which loads the app's native "core" lib.
-            XposedBridge.log("AtlasSign accessSig: loading CPU class...");
+            debugLog("accessSig: loading CPU class...");
             Class<?> cpu = Class.forName("com.yxcorp.gifshow.util.CPU", true, appClassLoader);
-            XposedBridge.log("AtlasSign accessSig: CPU class loaded, getting getClock method...");
+            debugLog("accessSig: CPU class loaded, getting getClock method...");
             Method getClock = cpu.getDeclaredMethod("getClock",
                     Context.class, byte[].class, int.class);
             getClock.setAccessible(true);
             byte[] input = plainText.getBytes("UTF-8");
-            XposedBridge.log("AtlasSign accessSig: invoking getClock...");
+            debugLog("accessSig: invoking getClock, inputLen=" + input.length + "...");
             Object result = getClock.invoke(null, context, input, Build.VERSION.SDK_INT);
             String signature = result != null ? result.toString() : "";
-            XposedBridge.log("AtlasSign accessSig: native success, resultLen=" + signature.length());
+            debugLog("accessSig: native success, resultLen=" + signature.length());
             return signature;
         } catch (Throwable error) {
             Throwable cause = error;
@@ -151,8 +162,7 @@ public class AtlasSign {
                     && ((java.lang.reflect.InvocationTargetException) error).getCause() != null) {
                 cause = ((java.lang.reflect.InvocationTargetException) error).getCause();
             }
-            XposedBridge.log("AtlasSign accessSig failed: "
-                    + cause.getClass().getName() + ": " + cause.getMessage());
+            debugLog("accessSig FAILED: " + cause.getClass().getName() + ": " + cause.getMessage());
             return "";
         }
     }

@@ -57,6 +57,7 @@ public class MainHook implements IXposedHookLoadPackage {
         ClassLoader cl = appClassLoader;
 
         // 1. Hook QCurrentUser 获取用户信息
+        hookQCurrentUser(cl);
 
         // 2. Hook 网络参数类 (eClass)
         hookEClass(cl);
@@ -170,6 +171,7 @@ public class MainHook implements IXposedHookLoadPackage {
                                 if (cookie != null) extractParamsFromCookie(cookie);
                             } catch (Throwable ignored) {}
 
+                            refreshCurrentUser();
                             if (hasAllRequiredParams()) buildAndOutput();
                         }
                     } catch (Throwable ignored) {}
@@ -203,6 +205,7 @@ public class MainHook implements IXposedHookLoadPackage {
                         postDelayed.invoke(handler, new Runnable() {
                             @Override
                             public void run() {
+                                refreshCurrentUser();
                                 if (hasAllRequiredParams()) {
                                     try {
                                         Class<?> qcuClass;
@@ -300,6 +303,63 @@ public class MainHook implements IXposedHookLoadPackage {
         } catch (Throwable ignored) {}
     }
 
+
+    private void refreshCurrentUser() {
+        try {
+            Class<?> qcuClass;
+            try {
+                qcuClass = Class.forName("com.kwai.framework.model.user.QCurrentUser", false, appClassLoader);
+            } catch (Throwable classLoaderError) {
+                XposedBridge.log(TAG + " QCurrentUser Class.forName(appClassLoader) failed: " + classLoaderError);
+                qcuClass = Class.forName("com.kwai.framework.model.user.QCurrentUser");
+            }
+
+            Object me = null;
+            try {
+                Method m = qcuClass.getMethod("me");
+                me = m.invoke(null);
+            } catch (Throwable meError) {
+                XposedBridge.log(TAG + " QCurrentUser.me() failed: " + meError);
+            }
+            if (me == null) {
+                try {
+                    Field meField = qcuClass.getDeclaredField("ME");
+                    meField.setAccessible(true);
+                    me = meField.get(null);
+                } catch (Throwable meFieldError) {
+                    XposedBridge.log(TAG + " QCurrentUser.ME failed: " + meFieldError);
+                }
+            }
+            if (me == null) return;
+
+            if (tokenClientSalt == null || tokenClientSalt.isEmpty()) {
+                readFirstString(me, new String[] {
+                        "mTokenClientSalt",
+                        "mNewTokenClientSalt",
+                        "tokenClientSalt",
+                        "M_TOKEN_CLIENT_SALT"
+                }, v -> tokenClientSalt = v);
+                if (tokenClientSalt == null || tokenClientSalt.isEmpty()) {
+                    callFirstString(me, new String[] {"getTokenClientSalt"}, v -> tokenClientSalt = v);
+                }
+            }
+            if (userId == null || userId.isEmpty()) {
+                readFirstString(me, new String[] {"mUserId", "mId", "id", "userId"}, v -> { userId = v; ud = v; });
+                if (userId == null || userId.isEmpty()) {
+                    callFirstString(me, new String[] {"getId", "getUserId"}, v -> { userId = v; ud = v; });
+                }
+            }
+            if (kuaishouApiSt == null || kuaishouApiSt.isEmpty()) {
+                readFirstString(me, new String[] {"mKuaishouApiSt", "kuaishouApiSt", "apiServiceToken", "mApiServiceToken"}, v -> kuaishouApiSt = v);
+                if (kuaishouApiSt == null || kuaishouApiSt.isEmpty()) {
+                    callFirstString(me, new String[] {"getApiServiceToken"}, v -> kuaishouApiSt = v);
+                }
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + " refreshCurrentUser failed: " + t);
+        }
+    }
+
     private void extractParamsFromQuery(String query) {
         if (query == null) return;
         for (String pair : query.split("&")) {
@@ -340,7 +400,8 @@ public class MainHook implements IXposedHookLoadPackage {
     }
 
     private boolean hasAllRequiredParams() {
-        return egid != null && did != null && userId != null;
+        return egid != null && did != null && userId != null
+                && tokenClientSalt != null && !tokenClientSalt.isEmpty();
     }
 
     private void buildAndOutput() {
@@ -418,6 +479,36 @@ public class MainHook implements IXposedHookLoadPackage {
             Object val = f.get(obj);
             if (val != null) consumer.accept(val.toString());
         } catch (Throwable ignored) {}
+    }
+
+
+    private void readFirstString(Object obj, String[] fieldNames, ValueConsumer consumer) {
+        for (String fieldName : fieldNames) {
+            try {
+                Field f = obj.getClass().getDeclaredField(fieldName);
+                f.setAccessible(true);
+                Object val = f.get(obj);
+                if (val != null && !val.toString().isEmpty()) {
+                    consumer.accept(val.toString());
+                    XposedBridge.log(TAG + " read " + fieldName + " from " + obj.getClass().getName());
+                    return;
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    private void callFirstString(Object obj, String[] methodNames, ValueConsumer consumer) {
+        for (String methodName : methodNames) {
+            try {
+                Method m = obj.getClass().getMethod(methodName);
+                Object val = m.invoke(obj);
+                if (val != null && !val.toString().isEmpty()) {
+                    consumer.accept(val.toString());
+                    XposedBridge.log(TAG + " read " + methodName + "() from " + obj.getClass().getName());
+                    return;
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 
     @FunctionalInterface

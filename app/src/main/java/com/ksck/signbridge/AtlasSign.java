@@ -1,6 +1,8 @@
 package com.ksck.signbridge;
 
 import java.lang.reflect.Method;
+import android.app.Application;
+import android.os.Build;
 
 /**
  * Atlas 签名 - 调用 KSecurity 和 MXSec API
@@ -87,6 +89,37 @@ public class AtlasSign {
         } catch (Exception e) {
             android.util.Log.e("AtlasSign", "sig3 error: " + e);
             return "";
+        }
+    }
+
+    /**
+     * 计算新版 access sig：与 App 内 KwaiSignSupplierImpl 一致，
+     * 对排序后的 key=value 明文调用 com.yxcorp.gifshow.util.CPU.getClock。
+     */
+    public static String accessSig(String plainText) {
+        try {
+            if (plainText == null || plainText.length() == 0) return "";
+            Class<?> cpu = appClassLoader.loadClass("com.yxcorp.gifshow.util.CPU");
+            Method getClock = cpu.getMethod("getClock",
+                    Application.class, byte[].class, int.class);
+            Application app = currentApplication();
+            Object result = getClock.invoke(null,
+                    app, plainText.getBytes("UTF-8"), Build.VERSION.SDK_INT);
+            return result != null ? result.toString() : "";
+        } catch (Exception e) {
+            android.util.Log.e("AtlasSign", "accessSig error: " + e);
+            return "";
+        }
+    }
+
+    private static Application currentApplication() {
+        try {
+            Class<?> activityThread = Class.forName("android.app.ActivityThread");
+            Method currentApp = activityThread.getMethod("currentApplication");
+            Object app = currentApp.invoke(null);
+            return (Application) app;
+        } catch (Exception e) {
+            return null;
         }
     }
 

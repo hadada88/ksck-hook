@@ -14,7 +14,7 @@ public class PureSign {
 
     private static final String SALT = "772867c19925";
 
-    public static String computeSig(String queryString) {
+    public static String buildPlainText(String queryString) {
         try {
             List<Pair> pairs = new ArrayList<>();
             if (queryString != null && !queryString.isEmpty()) {
@@ -23,7 +23,7 @@ public class PureSign {
                     if (eq > 0) {
                         String key = urlDecode(part.substring(0, eq));
                         String val = urlDecode(part.substring(eq + 1));
-                        if (!key.startsWith("__NS")) {
+                        if (!key.startsWith("__NS") && !"sig".equals(key)) {
                             pairs.add(new Pair(key, val));
                         }
                     }
@@ -39,8 +39,16 @@ public class PureSign {
                     lastKey = p.key;
                 }
             }
+            return sb.toString();
+        } catch (Exception e) {
+            android.util.Log.e("PureSign", "buildPlainText: " + e);
+            return "";
+        }
+    }
 
-            String plain = sb.toString() + SALT;
+    public static String computeSig(String queryString) {
+        try {
+            String plain = buildPlainText(queryString) + SALT;
             MessageDigest md = MessageDigest.getInstance("MD5");
             return bytesToHex(md.digest(plain.getBytes("UTF-8")));
         } catch (Exception e) {

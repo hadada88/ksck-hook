@@ -22,7 +22,11 @@ public class RouteHandler {
             String salt = json.optString("salt", "");
 
             // 纯算 sig
-            String sig = PureSign.computeSig(data);
+            String plainText = PureSign.buildPlainText(data);
+            String sig = AtlasSign.accessSig(plainText);
+            if (sig == null || sig.length() == 0) {
+                sig = PureSign.computeSig(data);
+            }
             // 纯算 __NStokensig
             String nstokensig = PureSign.computeTokenSig(sig, salt);
             // Atlas __NS_sig3 = KSecurity.atlasSign(path + sig)
